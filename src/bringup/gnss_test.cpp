@@ -1,26 +1,19 @@
 #include <Arduino.h>
 #include "BoardConfig.h"
+#include "drivers/MaxM10M.h"
 
-// 解析無しでGNSSからシリアルモニタに文字列が送られてくる つまり生きてることが確認できる
-HardwareSerial GNSS(1);
-
-void setup()
-{
-    Serial.begin(115200);
-
-    GNSS.begin(
-        BoardConfig::GNSS_BAUD,
-        SERIAL_8N1,
-        BoardConfig::GNSS_RX,
-        BoardConfig::GNSS_TX);
-
-    Serial.println("=== REGULUS GNSS Test ===");
+HardwareSerial gnssSerial(1);
+MaxM10M gnss(gnssSerial);
+void setup() {
+    Serial.begin(115200); delay(1000);
+    gnss.begin(BoardConfig::GNSS_BAUD, BoardConfig::GNSS_RX, BoardConfig::GNSS_TX);
+    Serial.println("=== REGULUS MAX-M10M Test ===");
+    Serial.printf("UART1 RX=GPIO%d TX=GPIO%d baud=%lu\n", BoardConfig::GNSS_RX, BoardConfig::GNSS_TX, (unsigned long)BoardConfig::GNSS_BAUD);
 }
-
-void loop()
-{
-    while (GNSS.available())
-    {
-        Serial.write(GNSS.read());
-    }
+void loop() {
+    gnss.update();
+    static uint32_t previous = 0; const uint32_t now = millis();
+    if (now - previous < 500) return; previous = now;
+    const MaxM10M::Data &d = gnss.data();
+    Serial.printf("valid=%d fix=%d lat=%.7f lon=%.7f alt=%.1f m sats=%u age=%lu ms\n", d.valid,d.fix,d.latitude,d.longitude,d.altitudeM,d.satellites,d.lastReceiveMs ? (unsigned long)(now-d.lastReceiveMs) : 0UL);
 }
