@@ -2,6 +2,7 @@
 #define CANSAT_DATA_H
 
 #include <Arduino.h>
+#include "MissionState.h"
 
 // --- データ構造体 ---
 typedef struct
@@ -60,6 +61,9 @@ bool update_imu_data(float ax, float ay, float az, float gx, float gy, float gz,
 bool update_mag_data(float mx, float my, float mz, float heading, bool valid);
 bool update_baro_data(float press, float temp, float alt, bool valid);
 bool update_gnss_data(double lat, double lon, float alt, uint8_t sats, bool fix, bool valid);
+
+// MissionTaskだけがミッション状態を更新し、他タスクはスナップショットを参照する。
+bool update_mission_state(MissionState state);
 
 bool get_cansat_data(CanSatData_t *out_data);
 

@@ -12,6 +12,7 @@ public:
 private:
     static volatile bool actionPending_;
     static volatile uint8_t pendingAction_;
+    bool initialized_ = false;
     uint32_t sentCount_ = 0;
     uint32_t sendFailCount_ = 0;
 };
