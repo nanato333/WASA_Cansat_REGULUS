@@ -30,4 +30,11 @@ namespace BoardConfig
 
     constexpr int MOTOR_BIN1 = 7;
     constexpr int MOTOR_BIN2 = 15;
+
+// バッテリー監視ピン
+#define VBAT_PIN 8;
+
+// status表示用LED
+#define LED_PIN 21;
+
 }
