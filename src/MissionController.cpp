@@ -90,8 +90,24 @@ bool MissionController::handleCommand(uint8_t command, uint32_t now) {
     }
 
     const MissionCommand missionCommand = static_cast<MissionCommand>(command);
+    if (missionCommand == MissionCommand::RESUME_LANDED) {
+        // センサーだけでは落下中と着地後を完全には区別できないため、
+        // 飛行中再起動のFAILSAFEに限り、地上局で着地確認後に受理する。
+        if (state_ != MissionState::FAILSAFE ||
+            failsafeReason_ != FailsafeReason::UNSAFE_FLIGHT_RESTART ||
+            mode_ != OperationMode::MISSION) {
+            return false;
+        }
+        failsafeReason_ = FailsafeReason::NONE;
+        saveByte(NVS_FAILSAFE_KEY, static_cast<uint8_t>(failsafeReason_));
+        update_failsafe_reason(failsafeReason_);
+        transitionTo(MissionState::LANDED, now);
+        return true;
+    }
     if (missionCommand == MissionCommand::CLEAR_FAILSAFE) {
-        if (state_ != MissionState::FAILSAFE || !failsafeRecoveryReady_) return false;
+        if (state_ != MissionState::FAILSAFE ||
+            failsafeReason_ != FailsafeReason::LOW_BATTERY ||
+            !failsafeRecoveryReady_) return false;
         mode_ = OperationMode::UNSELECTED;
         failsafeReason_ = FailsafeReason::NONE;
         saveByte(NVS_MODE_KEY, static_cast<uint8_t>(mode_));

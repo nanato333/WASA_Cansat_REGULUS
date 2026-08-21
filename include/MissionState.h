@@ -12,7 +12,9 @@ enum class OperationMode : uint8_t { UNSELECTED = 0, DEVELOPMENT = 1, MISSION = 
 enum class FailsafeReason : uint8_t { NONE = 0, LOW_BATTERY = 1, UNSAFE_FLIGHT_RESTART = 2, SENSOR_FAILURE = 3 };
 enum class MissionCommand : uint8_t {
     SELECT_DEVELOPMENT_MODE = 1, SELECT_MISSION_MODE = 2,
-    START_LAUNCH = 3, CLEAR_FAILSAFE = 4
+    START_LAUNCH = 3, CLEAR_FAILSAFE = 4,
+    // 飛行中再起動後、着地を地上確認した場合だけ状態4から再開する。
+    RESUME_LANDED = 5
 };
 const char *mission_state_name(MissionState);
 const char *mission_sub_state_name(MissionSubState);
