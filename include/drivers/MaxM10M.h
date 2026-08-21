@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include <TinyGPS++.h>
 
 class MaxM10M {
 public:
@@ -11,17 +12,17 @@ public:
         bool fix = false;
         bool valid = false;
         uint32_t lastReceiveMs = 0;
+        uint32_t charsProcessed = 0;
+        uint32_t passedChecksum = 0;
+        uint32_t failedChecksum = 0;
     };
     explicit MaxM10M(HardwareSerial &serial);
     void begin(uint32_t baud, int8_t rxPin, int8_t txPin);
     void update();
     const Data &data() const { return data_; }
 private:
+    static constexpr uint32_t DATA_TIMEOUT_MS = 2000;
     HardwareSerial &serial_;
+    TinyGPSPlus gps_;
     Data data_;
-    char line_[128] = {};
-    size_t length_ = 0;
-    bool parseLine();
-    static bool checksumValid(const char *line);
-    static double parseCoordinate(const char *value, const char *hemisphere);
 };

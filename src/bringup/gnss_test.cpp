@@ -15,5 +15,9 @@ void loop() {
     static uint32_t previous = 0; const uint32_t now = millis();
     if (now - previous < 500) return; previous = now;
     const MaxM10M::Data &d = gnss.data();
-    Serial.printf("valid=%d fix=%d lat=%.7f lon=%.7f alt=%.1f m sats=%u age=%lu ms\n", d.valid,d.fix,d.latitude,d.longitude,d.altitudeM,d.satellites,d.lastReceiveMs ? (unsigned long)(now-d.lastReceiveMs) : 0UL);
+    Serial.printf("valid=%d fix=%d lat=%.7f lon=%.7f alt=%.1f m sats=%u age=%lu ms chars=%lu ok=%lu failed=%lu\n",
+                  d.valid, d.fix, d.latitude, d.longitude, d.altitudeM, d.satellites,
+                  d.lastReceiveMs ? (unsigned long)(now - d.lastReceiveMs) : 0UL,
+                  (unsigned long)d.charsProcessed, (unsigned long)d.passedChecksum,
+                  (unsigned long)d.failedChecksum);
 }
