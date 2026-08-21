@@ -14,7 +14,8 @@ enum class MissionCommand : uint8_t {
     SELECT_DEVELOPMENT_MODE = 1, SELECT_MISSION_MODE = 2,
     START_LAUNCH = 3, CLEAR_FAILSAFE = 4,
     // 飛行中再起動後、着地を地上確認した場合だけ状態4から再開する。
-    RESUME_LANDED = 5, SET_GOAL_COORDINATE = 6
+    RESUME_LANDED = 5, SET_GOAL_COORDINATE = 6,
+    CONFIRM_DEPLOYED = 7, CONFIRM_LANDED = 8
 };
 const char *mission_state_name(MissionState);
 const char *mission_sub_state_name(MissionSubState);

@@ -204,3 +204,6 @@ State 4 writes the separation-attempt flag to NVS before driving both TB6612FNG 
 Motor mapping is defined in `include/BoardConfig.h`. Current defaults assume motor A is the right wheel and both channels move forward with IN1 high / IN2 low. Confirm wheel assignment and polarity with the vehicle lifted before flight; change only these booleans if wiring differs.
 
 Telemetry additions: `GC` goal configured, `GL` goal latitude, `GO` goal longitude, `GD` distance metres, `MC` motor state (`0 stop`, `1 forward`, `2 left`, `3 right`), and `PS` separation state (`0 not started`, `1 active`, `2 complete`, `3 aborted`).
+## Manual phase recovery commands
+
+WCPP `AC=7` (`CONFIRM_DEPLOYED`) is accepted only in Mission Mode while State 2 is active and advances to State 3. `AC=8` (`CONFIRM_LANDED`) is accepted in Mission Mode from State 2 or 3, or in Development Mode from State 0 for a lifted ground test. Entering State 4 immediately starts the one-time 10 second separation motor sequence. Invalid mode/state combinations are rejected by the vehicle. Flight-restart State 7 recovery continues to use `AC=5` (`RESUME_LANDED`).
