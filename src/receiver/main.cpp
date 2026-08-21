@@ -4,6 +4,9 @@
 #include <esp_wifi.h>
 #include <esp_arduino_version.h>
 #include <esp_system.h>
+#include "BoardConfig.h"
+#include "drivers/MaxM10M.h"
+#include "packet.h"
 
 namespace {
 constexpr uint8_t WIFI_CHANNEL = 1;
@@ -12,6 +15,8 @@ constexpr uint8_t STATUS_LED_PIN = RECEIVER_LED_PIN;
 constexpr uint32_t SERIAL_BAUD = 115200;
 constexpr uint32_t SERIAL_TIMEOUT_MS = 100;
 constexpr uint8_t DIAGNOSTIC_COMPONENT_ID = 0x7F;
+constexpr uint8_t GNSS_COMPONENT_ID = 0x7E;
+constexpr uint32_t GNSS_PERIOD_MS = 1000;
 constexpr uint32_t DIAGNOSTIC_PERIOD_MS = 1000;
 const uint8_t BROADCAST_ADDRESS[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
@@ -26,6 +31,9 @@ uint8_t serialReceiveLength = 0;
 uint32_t lastSerialReceiveMs = 0;
 uint32_t lastLedOnMs = 0;
 uint32_t lastDiagnosticMs = 0;
+uint32_t lastGnssMs = 0;
+HardwareSerial gnssSerial(1);
+MaxM10M gnss(gnssSerial);
 uint8_t receiverResetReason = 0;
 bool ledOn = false;
 
@@ -119,6 +127,26 @@ void sendReceiverDiagnostic(uint32_t now) {
     Serial.write(frame, sizeof(frame));
 }
 
+void sendReceiverGnss(uint32_t now) {
+    gnss.update();
+    if (lastGnssMs != 0 && now - lastGnssMs < GNSS_PERIOD_MS) return;
+    lastGnssMs = now;
+    const MaxM10M::Data &data = gnss.data();
+    uint8_t frame[96] = {};
+    wcpp::Packet packet = wcpp::Packet::empty(frame, sizeof(frame));
+    packet.telemetry(0x7D, GNSS_COMPONENT_ID);
+    bool ok = packet.append("RL").setFloat64(data.latitude);
+    ok &= packet.append("RO").setFloat64(data.longitude);
+    ok &= packet.append("RA").setInt(data.satellites);
+    ok &= packet.append("RV").setBool(data.valid);
+    ok &= packet.append("RF").setBool(data.fix);
+    ok &= packet.append("RT").setFloat64(now / 1000.0);
+    if (!ok) return;
+    const uint8_t payloadSize = packet.size();
+    frame[0] = payloadSize + 1;
+    frame[payloadSize] = wcpp::Packet::checksum(frame, payloadSize);
+    Serial.write(frame, payloadSize + 1);
+}
 void indicatePacket(uint32_t now) {
     digitalWrite(STATUS_LED_PIN, HIGH);
     lastLedOnMs = now;
@@ -174,6 +202,7 @@ void setup() {
     pinMode(STATUS_LED_PIN, OUTPUT);
     digitalWrite(STATUS_LED_PIN, LOW);
 
+    gnss.begin(BoardConfig::GNSS_BAUD, BoardConfig::GNSS_RX, BoardConfig::GNSS_TX);
     receiveQueue = xQueueCreate(8, sizeof(RadioFrame));
     if (receiveQueue == nullptr || !initializeEspNow()) {
         // 初期化失敗時は点灯を維持する。USBへ文字列は送らない。
@@ -184,6 +213,7 @@ void setup() {
 void loop() {
     const uint32_t now = millis();
     sendReceiverDiagnostic(now);
+    sendReceiverGnss(now);
     forwardRadioToUsb(now);
     forwardUsbToRadio(now);
 

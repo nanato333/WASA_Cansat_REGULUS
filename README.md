@@ -207,3 +207,6 @@ Telemetry additions: `GC` goal configured, `GL` goal latitude, `GO` goal longitu
 ## Manual phase recovery commands
 
 WCPP `AC=7` (`CONFIRM_DEPLOYED`) is accepted only in Mission Mode while State 2 is active and advances to State 3. `AC=8` (`CONFIRM_LANDED`) is accepted in Mission Mode from State 2 or 3, or in Development Mode from State 0 for a lifted ground test. Entering State 4 immediately starts the one-time 10 second separation motor sequence. Invalid mode/state combinations are rejected by the vehicle. Flight-restart State 7 recovery continues to use `AC=5` (`RESUME_LANDED`).
+### Ground receiver GNSS
+
+The `espnow_receiver` environment now reads its onboard MAX-M10M with the same TinyGPS++ driver and board wiring as the flight unit (`RX=GPIO18`, `TX=GPIO17`, `9600 baud`). Once per second it emits a receiver-only WCPP diagnostic packet over USB containing `RL` latitude, `RO` longitude, `RA` satellites, `RV` UART validity, `RF` fix validity, and `RT` receiver time. This packet is not forwarded over ESP-NOW and does not overwrite vehicle GNSS telemetry.
