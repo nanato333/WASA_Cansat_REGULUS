@@ -31,7 +31,8 @@ constexpr float LANDED_MIN_ACCEL_MPS2 = 7.0f;
 constexpr float LANDED_MAX_ACCEL_MPS2 = 12.5f;
 constexpr float LANDED_MAX_GYRO_DPS = 20.0f;
 constexpr uint32_t LANDED_CONFIRM_MS = 3000;
-constexpr uint32_t SEPARATION_HOLD_MS = 3000;
+constexpr uint32_t SEPARATION_HOLD_MS = 10000;
+constexpr float NAVIGATION_HEADING_DEADBAND_DEG = 15.0f;
 constexpr uint32_t FINISHED_HOLD_MS = 10000;
 constexpr float VERTICAL_SPEED_FILTER_ALPHA = 0.15f;
 

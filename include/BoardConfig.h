@@ -31,6 +31,13 @@ namespace BoardConfig
     constexpr int MOTOR_BIN1 = 7;
     constexpr int MOTOR_BIN2 = 15;
 
+    // 現在のmotor_testと同じ正転極性。実機の回転方向が逆なら片側だけ変更する。
+    constexpr bool MOTOR_A_FORWARD_IN1_HIGH = true;
+    constexpr bool MOTOR_B_FORWARD_IN1_HIGH = true;
+
+    // M1/M2をはんだ付け後、Motor Aが右輪でなければfalseへ変更する。
+    constexpr bool MOTOR_A_IS_RIGHT = true;
+
     // バッテリー監視用ADC。100 kΩ + 100 kΩ分圧の中点を接続する。
     constexpr int VBAT_PIN = 8;
 

@@ -195,3 +195,12 @@ OneDriveのArduino ReceiverをESP32-S3試験基板向けの espnow_receiver 環�
     pio run -e espnow_receiver -t upload --upload-port COM5
 
 ReceiverはUSBへWCPPバイナリを直接出力します。地上局を起動している間は同じCOMポートをPlatformIOのシリアルモニターで同時に開かないでください。
+## Goal navigation and motor sequence
+
+The ground station sends WCPP action `AC=6` with Float64 `GL` (latitude) and `GO` (longitude). The vehicle validates the coordinate, stores it in ESP32 NVS, and echoes `GC`, `GL`, `GO`, `GD`, `MC`, and `PS` in normal telemetry.
+
+State 4 writes the separation-attempt flag to NVS before driving both TB6612FNG channels forward for 10 seconds. A reboot never repeats an attempted separation; it resumes at State 5 with `PS=2` (complete) or `PS=3` (aborted). State 5 stops unless the goal, GNSS fix, and magnetometer heading are valid. It drives straight inside the heading deadband, turns with only the outside wheel, stops inside 5 m, confirms for 5 seconds, and enters State 6. State 7 always stops both motors.
+
+Motor mapping is defined in `include/BoardConfig.h`. Current defaults assume motor A is the right wheel and both channels move forward with IN1 high / IN2 low. Confirm wheel assignment and polarity with the vehicle lifted before flight; change only these booleans if wiring differs.
+
+Telemetry additions: `GC` goal configured, `GL` goal latitude, `GO` goal longitude, `GD` distance metres, `MC` motor state (`0 stop`, `1 forward`, `2 left`, `3 right`), and `PS` separation state (`0 not started`, `1 active`, `2 complete`, `3 aborted`).

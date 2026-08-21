@@ -190,9 +190,9 @@ void updateRadio(uint32_t now) {
     uint8_t packet[250];
     const size_t length = WcppTelemetry::encode(data, packet, sizeof(packet), state == MissionState::LOW_BATTERY);
     if (length > 0) radio.send(packet, length);
-    uint8_t action = 0;
-    if (radio.takeAction(action)) {
-        if (!mission.handleCommand(action, now)) Serial.printf("[RADIO] rejected AC=%u\n", action);
+    WcppTelemetry::Command command;
+    if (radio.takeCommand(command)) {
+        if (!mission.handleCommand(command.action, now, command.hasGoalCoordinate, command.goalLatitude, command.goalLongitude)) Serial.printf("[RADIO] rejected AC=%u\n", command.action);
     }
 }
 #endif

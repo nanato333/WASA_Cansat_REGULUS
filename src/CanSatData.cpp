@@ -99,6 +99,12 @@ bool update_mission_state(MissionState state)
     return false;
 }
 // Mutex保持時間を短くするため、呼出側へ構造体全体をコピーしてから処理する。
+bool update_navigation_status(bool configured, double latitude, double longitude, float distance_m, uint8_t motor_state, uint8_t separation_status)
+{
+ if(!g_data_mutex)return false; if(xSemaphoreTake(g_data_mutex,pdMS_TO_TICKS(10))!=pdTRUE)return false;
+ g_cansat_data.sys.goal_configured=configured;g_cansat_data.sys.goal_latitude=latitude;g_cansat_data.sys.goal_longitude=longitude;g_cansat_data.sys.goal_distance_m=distance_m;g_cansat_data.sys.motor_state=motor_state;g_cansat_data.sys.separation_status=separation_status;
+ xSemaphoreGive(g_data_mutex);return true;
+}
 bool get_cansat_data(CanSatData_t *out_data)
 {
     if (g_data_mutex == NULL || out_data == NULL)

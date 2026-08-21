@@ -47,6 +47,10 @@ typedef struct
     int rssi;              // 電波強度 [dBm]
     uint8_t reset_reason;  // ESP32リセット理由
     uint32_t timestamp;    // 経過時間 [ms]
+    bool goal_configured;
+    double goal_latitude, goal_longitude;
+    float goal_distance_m;
+    uint8_t motor_state, separation_status;
 } SystemStatus_t;
 
 typedef struct
@@ -72,6 +76,7 @@ bool update_mission_status(MissionState state, MissionSubState substate, Operati
 bool update_system_status(float battery_voltage, int rssi);
 bool update_battery_voltage(float battery_voltage);
 bool update_failsafe_reason(FailsafeReason reason);
+bool update_navigation_status(bool configured, double latitude, double longitude, float distance_m, uint8_t motor_state, uint8_t separation_status);
 
 bool get_cansat_data(CanSatData_t *out_data);
 

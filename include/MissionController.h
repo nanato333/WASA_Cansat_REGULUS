@@ -1,12 +1,13 @@
 #pragma once
 
 #include "CanSatData.h"
+#include "MotorController.h"
 
 class MissionController {
 public:
     void begin();
     void update(const CanSatData_t &data, uint32_t now);
-    bool handleCommand(uint8_t command, uint32_t now);
+    bool handleCommand(uint8_t command, uint32_t now, bool hasGoal=false, double goalLatitude=0, double goalLongitude=0);
     MissionState state() const { return state_; }
 
 private:
@@ -41,4 +42,9 @@ private:
     uint32_t motionBaselineMs_ = 0;
     uint32_t stackStartedMs_ = 0;
     uint32_t goalStartedMs_ = 0;
+    MotorController motor_;
+    bool goalConfigured_=false, separationAttempted_=false, separationCompleted_=false, separationRunning_=false;
+    double goalLatitude_=0, goalLongitude_=0;
+    uint32_t separationStartedMs_=0;
+    uint8_t separationStatus_=0;
 };

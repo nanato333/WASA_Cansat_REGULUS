@@ -36,10 +36,10 @@ void TelemetryTask(void *) {
         }
 
         if (ready) {
-            uint8_t action = 0;
-            if (radio.takeAction(action) &&
-                !submit_mission_command(action)) {
-                Serial.printf("[Telemetry] rejected AC=%u\n", action);
+            WcppTelemetry::Command command;
+            if (radio.takeCommand(command) &&
+                !submit_mission_command(command)) {
+                Serial.printf("[Telemetry] rejected AC=%u\n", (unsigned)command.action);
             }
 
             CanSatData_t data{};

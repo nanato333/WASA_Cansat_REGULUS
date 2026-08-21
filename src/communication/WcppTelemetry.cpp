@@ -2,70 +2,11 @@
 #include "packet.h"
 #include <string.h>
 #include <math.h>
-
 namespace WcppTelemetry {
-size_t encode(const CanSatData_t &d, uint8_t *buffer, size_t capacity, bool minimal) {
-    if (!buffer || capacity < 32 || capacity > 255) return 0;
-    memset(buffer, 0, capacity);
-    wcpp::Packet packet = wcpp::Packet::empty(buffer, (uint8_t)capacity);
-    packet.telemetry(PACKET_ID, COMPONENT_ID);
-    bool ok = true;
-    ok &= packet.append("TI").setFloat64(d.sys.timestamp / 1000.0);
-    ok &= packet.append("AL").setFloat32(d.baro.altitude);
-    ok &= packet.append("PR").setFloat32(d.baro.pressure);
-    ok &= packet.append("TE").setFloat32(d.baro.temperature);
-    ok &= packet.append("ST").setInt(d.sys.phase);
-    ok &= packet.append("SS").setInt(d.sys.subphase);
-    ok &= packet.append("MO").setInt(d.sys.operation_mode);
-    ok &= packet.append("RS").setInt(d.sys.reset_reason);
-    ok &= packet.append("BT").setFloat32(d.sys.battery_voltage);
-    ok &= packet.append("FR").setInt(d.sys.failsafe_reason);
-    ok &= packet.append("LA").setFloat64(d.gnss.latitude);
-    ok &= packet.append("LO").setFloat64(d.gnss.longitude);
-    ok &= packet.append("SA").setInt(d.gnss.satellites);
-    if (minimal) {
-        if (!ok) return 0;
-        const uint8_t payloadSize = packet.size();
-        if ((size_t)payloadSize + 1 > capacity || payloadSize >= 250) return 0;
-        buffer[0] = payloadSize + 1; buffer[payloadSize] = wcpp::Packet::checksum(buffer, payloadSize);
-        return payloadSize + 1;
-    }
-    ok &= packet.append("AX").setFloat32(d.imu.ax);
-    ok &= packet.append("AY").setFloat32(d.imu.ay);
-    ok &= packet.append("AZ").setFloat32(d.imu.az);
-    ok &= packet.append("GX").setFloat32(d.imu.gx);
-    ok &= packet.append("GY").setFloat32(d.imu.gy);
-    ok &= packet.append("GZ").setFloat32(d.imu.gz);
-    ok &= packet.append("MX").setFloat32(d.mag.mx);
-    ok &= packet.append("MY").setFloat32(d.mag.my);
-    ok &= packet.append("MZ").setFloat32(d.mag.mz);
-    ok &= packet.append("HD").setFloat32(d.mag.heading);
-    const float roll = atan2f(d.imu.ay, d.imu.az) * 180.0f / PI;
-    const float pitch = atan2f(-d.imu.ax, sqrtf(d.imu.ay*d.imu.ay + d.imu.az*d.imu.az)) * 180.0f / PI;
-    ok &= packet.append("OX").setFloat32(pitch);
-    ok &= packet.append("OY").setFloat32(roll);
-    ok &= packet.append("OZ").setFloat32(d.mag.heading);
-    ok &= packet.append("IV").setBool(d.imu.is_valid);
-    ok &= packet.append("MV").setBool(d.mag.is_valid);
-    ok &= packet.append("BV").setBool(d.baro.is_valid);
-    ok &= packet.append("NV").setBool(d.gnss.is_valid);
-    ok &= packet.append("FX").setBool(d.gnss.fix);
-    if (!ok) return 0;
-    const uint8_t payloadSize = packet.size();
-    if ((size_t)payloadSize + 1 > capacity || payloadSize >= 250) return 0;
-    buffer[0] = payloadSize + 1;
-    buffer[payloadSize] = wcpp::Packet::checksum(buffer, payloadSize);
-    return payloadSize + 1;
-}
-
-bool decodeAction(const uint8_t *buffer, size_t length, uint8_t &action) {
-    if (!buffer || length < 5 || length > 250 || buffer[0] != length) return false;
-    if (wcpp::Packet::checksum(buffer, length - 1) != buffer[length - 1]) return false;
-    wcpp::Packet packet = wcpp::Packet::decode(buffer);
-    if (!packet.isCommand()) return false;
-    auto entry = packet.find("AC");
-    if (entry == packet.end() || !(*entry).isInt()) return false;
-    action = (uint8_t)(*entry).getUInt();
-    return true;
-}
+static size_t finish(wcpp::Packet&p,uint8_t*b,size_t c,bool ok){if(!ok)return 0;uint8_t n=p.size();if((size_t)n+1>c||n>=250)return 0;b[0]=n+1;b[n]=wcpp::Packet::checksum(b,n);return n+1;}
+size_t encode(const CanSatData_t&d,uint8_t*b,size_t c,bool minimal){if(!b||c<32||c>255)return 0;memset(b,0,c);auto p=wcpp::Packet::empty(b,(uint8_t)c);p.telemetry(PACKET_ID,COMPONENT_ID);bool ok=true;
+ok&=p.append("TI").setFloat64(d.sys.timestamp/1000.0);ok&=p.append("ST").setInt(d.sys.phase);ok&=p.append("SS").setInt(d.sys.subphase);ok&=p.append("MO").setInt(d.sys.operation_mode);ok&=p.append("RS").setInt(d.sys.reset_reason);ok&=p.append("BT").setFloat32(d.sys.battery_voltage);ok&=p.append("FR").setInt(d.sys.failsafe_reason);ok&=p.append("LA").setFloat64(d.gnss.latitude);ok&=p.append("LO").setFloat64(d.gnss.longitude);ok&=p.append("SA").setInt(d.gnss.satellites);if(minimal)return finish(p,b,c,ok);
+ok&=p.append("AL").setFloat32(d.baro.altitude);ok&=p.append("PR").setFloat32(d.baro.pressure);ok&=p.append("TE").setFloat32(d.baro.temperature);ok&=p.append("AX").setFloat32(d.imu.ax);ok&=p.append("AY").setFloat32(d.imu.ay);ok&=p.append("AZ").setFloat32(d.imu.az);ok&=p.append("GX").setFloat32(d.imu.gx);ok&=p.append("GY").setFloat32(d.imu.gy);ok&=p.append("GZ").setFloat32(d.imu.gz);ok&=p.append("MX").setFloat32(d.mag.mx);ok&=p.append("MY").setFloat32(d.mag.my);ok&=p.append("MZ").setFloat32(d.mag.mz);ok&=p.append("HD").setFloat32(d.mag.heading);ok&=p.append("IV").setBool(d.imu.is_valid);ok&=p.append("MV").setBool(d.mag.is_valid);ok&=p.append("BV").setBool(d.baro.is_valid);ok&=p.append("NV").setBool(d.gnss.is_valid);ok&=p.append("FX").setBool(d.gnss.fix);ok&=p.append("GC").setBool(d.sys.goal_configured);ok&=p.append("GL").setFloat64(d.sys.goal_latitude);ok&=p.append("GO").setFloat64(d.sys.goal_longitude);ok&=p.append("GD").setFloat32(d.sys.goal_distance_m);ok&=p.append("MC").setInt(d.sys.motor_state);ok&=p.append("PS").setInt(d.sys.separation_status);return finish(p,b,c,ok);}
+bool decodeCommand(const uint8_t*b,size_t n,Command&c){if(!b||n<5||n>250||b[0]!=n||wcpp::Packet::checksum(b,n-1)!=b[n-1])return false;auto p=wcpp::Packet::decode(b);if(!p.isCommand())return false;auto a=p.find("AC");if(a==p.end()||!(*a).isInt())return false;c.action=(uint8_t)(*a).getUInt();if(c.action==(uint8_t)MissionCommand::SET_GOAL_COORDINATE){auto la=p.find("GL"),lo=p.find("GO");if(la==p.end()||lo==p.end()||!(*la).isFloat64()||!(*lo).isFloat64())return false;c.hasGoalCoordinate=true;c.goalLatitude=(*la).getFloat64();c.goalLongitude=(*lo).getFloat64();}return true;}
+bool decodeAction(const uint8_t*b,size_t n,uint8_t&a){Command c;if(!decodeCommand(b,n,c))return false;a=c.action;return true;}
 }
