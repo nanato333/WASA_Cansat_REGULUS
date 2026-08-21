@@ -46,6 +46,7 @@ void LoggerTask(void *pvParameters) {
                           static_cast<unsigned long>(data.sys.timestamp),
                           mission_state_name(state),
                           static_cast<unsigned int>(ESP.getFreeHeap()));
+            Serial.printf("[VBAT] %.3f V\n", data.sys.battery_voltage);
             Serial.printf("[IMU ] %s A=%.2f,%.2f,%.2f G=%.2f,%.2f,%.2f\n",
                           data.imu.is_valid ? "OK" : "NG", data.imu.ax, data.imu.ay, data.imu.az,
                           data.imu.gx, data.imu.gy, data.imu.gz);

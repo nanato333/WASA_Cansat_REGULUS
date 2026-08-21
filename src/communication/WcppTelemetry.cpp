@@ -4,7 +4,7 @@
 #include <math.h>
 
 namespace WcppTelemetry {
-size_t encode(const CanSatData_t &d, uint8_t *buffer, size_t capacity) {
+size_t encode(const CanSatData_t &d, uint8_t *buffer, size_t capacity, bool minimal) {
     if (!buffer || capacity < 32 || capacity > 255) return 0;
     memset(buffer, 0, capacity);
     wcpp::Packet packet = wcpp::Packet::empty(buffer, (uint8_t)capacity);
@@ -15,9 +15,21 @@ size_t encode(const CanSatData_t &d, uint8_t *buffer, size_t capacity) {
     ok &= packet.append("PR").setFloat32(d.baro.pressure);
     ok &= packet.append("TE").setFloat32(d.baro.temperature);
     ok &= packet.append("ST").setInt(d.sys.phase);
+    ok &= packet.append("SS").setInt(d.sys.subphase);
+    ok &= packet.append("MO").setInt(d.sys.operation_mode);
+    ok &= packet.append("RS").setInt(d.sys.reset_reason);
+    ok &= packet.append("BT").setFloat32(d.sys.battery_voltage);
+    ok &= packet.append("FR").setInt(d.sys.failsafe_reason);
     ok &= packet.append("LA").setFloat64(d.gnss.latitude);
     ok &= packet.append("LO").setFloat64(d.gnss.longitude);
     ok &= packet.append("SA").setInt(d.gnss.satellites);
+    if (minimal) {
+        if (!ok) return 0;
+        const uint8_t payloadSize = packet.size();
+        if ((size_t)payloadSize + 1 > capacity || payloadSize >= 250) return 0;
+        buffer[0] = payloadSize + 1; buffer[payloadSize] = wcpp::Packet::checksum(buffer, payloadSize);
+        return payloadSize + 1;
+    }
     ok &= packet.append("AX").setFloat32(d.imu.ax);
     ok &= packet.append("AY").setFloat32(d.imu.ay);
     ok &= packet.append("AZ").setFloat32(d.imu.az);

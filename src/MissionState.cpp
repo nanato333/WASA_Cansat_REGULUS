@@ -1,14 +1,6 @@
 #include "MissionState.h"
-
-const char *mission_state_name(MissionState state) {
-    switch (state) {
-        case MissionState::ROCKET_LOADED: return "ROCKET_LOADED";
-        case MissionState::LAUNCH: return "LAUNCH";
-        case MissionState::DEPLOYED: return "DEPLOYED";
-        case MissionState::DESCENT: return "DESCENT";
-        case MissionState::LANDED: return "LANDED";
-        case MissionState::RUNNING: return "RUNNING";
-        case MissionState::STOPPED: return "STOPPED";
-        default: return "UNKNOWN";
-    }
-}
+const char *mission_state_name(MissionState s) { switch (s) { case MissionState::BOOT:return "BOOT"; case MissionState::LAUNCH_STANDBY:return "LAUNCH_STANDBY"; case MissionState::LAUNCH:return "LAUNCH"; case MissionState::DEPLOYED:return "DEPLOYED"; case MissionState::LANDED:return "LANDED"; case MissionState::RUNNING:return "RUNNING"; case MissionState::FINISHED:return "FINISHED"; case MissionState::FAILSAFE:return "FAILSAFE"; default:return "UNKNOWN"; } }
+const char *mission_sub_state_name(MissionSubState s) { switch (s) { case MissionSubState::NONE:return "NONE"; case MissionSubState::GPS_NAVIGATION:return "GPS_NAVIGATION"; case MissionSubState::RSSI_HOMING:return "RSSI_HOMING"; case MissionSubState::STACK_ESCAPE:return "STACK_ESCAPE"; default:return "UNKNOWN"; } }
+const char *operation_mode_name(OperationMode m) { switch (m) { case OperationMode::UNSELECTED:return "UNSELECTED"; case OperationMode::DEVELOPMENT:return "DEVELOPMENT"; case OperationMode::MISSION:return "MISSION"; default:return "UNKNOWN"; } }
+const char *failsafe_reason_name(FailsafeReason r) { switch (r) { case FailsafeReason::NONE:return "NONE"; case FailsafeReason::LOW_BATTERY:return "LOW_BATTERY"; case FailsafeReason::UNSAFE_FLIGHT_RESTART:return "UNSAFE_FLIGHT_RESTART"; case FailsafeReason::SENSOR_FAILURE:return "SENSOR_FAILURE"; default:return "UNKNOWN"; } }
+bool is_valid_mission_command(uint8_t v) { return v == (uint8_t)MissionCommand::SELECT_DEVELOPMENT_MODE || v == (uint8_t)MissionCommand::SELECT_MISSION_MODE || v == (uint8_t)MissionCommand::START_LAUNCH || v == (uint8_t)MissionCommand::CLEAR_FAILSAFE; }

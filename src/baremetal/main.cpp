@@ -3,6 +3,9 @@
 #include <math.h>
 #include "BoardConfig.h"
 #include "CanSatData.h"
+#include "MissionController.h"
+#include "MissionConfig.h"
+#include "BatteryMonitor.h"
 #ifdef ENABLE_ESPNOW
 #include <WiFi.h>
 #include "communication/EspNowRadio.h"
@@ -17,13 +20,13 @@
 #endif
 
 namespace {
-constexpr uint32_t IMU_INTERVAL_MS = 10;
-constexpr uint32_t MAG_INTERVAL_MS = 20;
-constexpr uint32_t BARO_INTERVAL_MS = 100;
+
+
+
 constexpr uint32_t PRINT_INTERVAL_MS = 500;
 constexpr uint32_t RETRY_INTERVAL_MS = 5000;
 #ifdef ENABLE_ESPNOW
-constexpr uint32_t RADIO_INTERVAL_MS = 100;
+
 #endif
 
 struct SensorState {
@@ -35,7 +38,8 @@ struct SensorState {
 };
 
 SensorState imuState, magState, baroState, gnssState;
-uint32_t lastImuMs = 0, lastMagMs = 0, lastBaroMs = 0, lastPrintMs = 0;
+MissionController mission;
+uint32_t lastImuMs = 0, lastMagMs = 0, lastBaroMs = 0, lastBatteryMs = 0, lastPrintMs = 0;
 #ifdef ENABLE_ESPNOW
 uint32_t lastRadioMs = 0;
 EspNowRadio radio;
@@ -45,7 +49,7 @@ bool baroConversionPending = false;
 uint32_t baroConversionStartedMs = 0;
 
 #ifndef USE_MOCK_SENSORS
-QMI8658 imu(Wire, QMI8658::ADDRESS_HIGH);
+QMI8658 imu(Wire, QMI8658::ADDRESS_LOW);
 MMC5603 mag(Wire);
 HP203B baro(Wire);
 HardwareSerial gnssSerial(1);
@@ -72,7 +76,7 @@ void retrySensors(uint32_t now) {
 }
 
 void updateImu(uint32_t now) {
-    if (!due(now, lastImuMs, IMU_INTERVAL_MS) || !imuState.initialized) return;
+    if (!due(now, lastImuMs, mission.state() == MissionState::LAUNCH ? MissionConfig::FAST_IMU_PERIOD_MS : MissionConfig::NORMAL_IMU_PERIOD_MS) || !imuState.initialized) return;
     QMI8658::Data data;
     imuState.valid = imu.read(data);
     if (imuState.valid) {
@@ -85,7 +89,7 @@ void updateImu(uint32_t now) {
 }
 
 void updateMag(uint32_t now) {
-    if (!due(now, lastMagMs, MAG_INTERVAL_MS) || !magState.initialized) return;
+    if (!due(now, lastMagMs, mission.state() == MissionState::LAUNCH ? MissionConfig::FAST_MAG_PERIOD_MS : MissionConfig::NORMAL_MAG_PERIOD_MS) || !magState.initialized) return;
     if (!mag.isMMCdataready()) return;
     MMC5603::MagData data;
     magState.valid = mag.read(data);
@@ -103,7 +107,7 @@ void updateMag(uint32_t now) {
 void updateBaro(uint32_t now) {
     if (!baroState.initialized) return;
     if (!baroConversionPending) {
-        if (!due(now, lastBaroMs, BARO_INTERVAL_MS)) return;
+        if (!due(now, lastBaroMs, mission.state() == MissionState::LAUNCH ? MissionConfig::FAST_BARO_PERIOD_MS : MissionConfig::NORMAL_BARO_PERIOD_MS)) return;
         baroConversionPending = baro.startConversion();
         baroConversionStartedMs = now;
         if (!baroConversionPending) ++baroState.errorCount;
@@ -137,21 +141,21 @@ void retrySensors(uint32_t) {
 }
 
 void updateImu(uint32_t now) {
-    if (!due(now, lastImuMs, IMU_INTERVAL_MS)) return;
+    if (!due(now, lastImuMs, mission.state() == MissionState::LAUNCH ? MissionConfig::FAST_IMU_PERIOD_MS : MissionConfig::NORMAL_IMU_PERIOD_MS)) return;
     const float t = now / 1000.0f;
     update_imu_data(0.15f*sinf(t), 0.10f*cosf(t), 9.80665f,
                     1.5f*sinf(t*0.5f), 0.8f*cosf(t*0.4f), 5.0f, true);
     imuState.valid = true; imuState.lastSuccessMs = now;
 }
 void updateMag(uint32_t now) {
-    if (!due(now, lastMagMs, MAG_INTERVAL_MS)) return;
+    if (!due(now, lastMagMs, mission.state() == MissionState::LAUNCH ? MissionConfig::FAST_MAG_PERIOD_MS : MissionConfig::NORMAL_MAG_PERIOD_MS)) return;
     const float heading = fmodf(now * 0.02f, 360.0f);
     const float rad = heading * PI / 180.0f;
     update_mag_data(35.0f*cosf(rad), 35.0f*sinf(rad), 28.0f, heading, true);
     magState.valid = true; magState.lastSuccessMs = now;
 }
 void updateBaro(uint32_t now) {
-    if (!due(now, lastBaroMs, BARO_INTERVAL_MS)) return;
+    if (!due(now, lastBaroMs, mission.state() == MissionState::LAUNCH ? MissionConfig::FAST_BARO_PERIOD_MS : MissionConfig::NORMAL_BARO_PERIOD_MS)) return;
     const float altitude = 20.0f + 5.0f*sinf(now/10000.0f);
     const float pressure = 1013.25f*powf(1.0f-altitude/44330.0f, 5.255f);
     update_baro_data(pressure, 24.0f, altitude, true);
@@ -165,17 +169,30 @@ void updateGnss(uint32_t now) {
 }
 #endif
 
+
+void updateBattery(uint32_t now) {
+    if (!due(now, lastBatteryMs, 1000)) return;
+#ifdef USE_MOCK_SENSORS
+    update_battery_voltage(4.0f);
+#else
+    update_battery_voltage(BatteryMonitor::readVoltage());
+#endif
+}
 #ifdef ENABLE_ESPNOW
 void updateRadio(uint32_t now) {
-    if (!radioReady || !due(now, lastRadioMs, RADIO_INTERVAL_MS)) return;
+    if (!radioReady) return;
+    CanSatData_t current{}; get_cansat_data(&current);
+    MissionState state = static_cast<MissionState>(current.sys.phase);
+    const uint32_t interval = state == MissionState::LOW_BATTERY ? MissionConfig::LOW_BATTERY_TELEMETRY_PERIOD_MS : (state == MissionState::LAUNCH ? MissionConfig::FAST_TELEMETRY_PERIOD_MS : MissionConfig::NORMAL_TELEMETRY_PERIOD_MS);
+    if (!due(now, lastRadioMs, interval)) return;
     CanSatData_t data;
     if (!get_cansat_data(&data)) return;
     uint8_t packet[250];
-    const size_t length = WcppTelemetry::encode(data, packet, sizeof(packet));
+    const size_t length = WcppTelemetry::encode(data, packet, sizeof(packet), state == MissionState::LOW_BATTERY);
     if (length > 0) radio.send(packet, length);
     uint8_t action = 0;
     if (radio.takeAction(action)) {
-        Serial.printf("[RADIO] command action=%u received\n", action);
+        if (!mission.handleCommand(action, now)) Serial.printf("[RADIO] rejected AC=%u\n", action);
     }
 }
 #endif
@@ -195,12 +212,17 @@ void printState(uint32_t now) {
     Serial.printf("[GNSS] %s fix=%d lat=%.7f lon=%.7f alt=%.1f sats=%u\n\n",
                   d.gnss.is_valid?"OK":"WAIT",d.gnss.fix,d.gnss.latitude,d.gnss.longitude,
                   d.gnss.altitude,d.gnss.satellites);
+    Serial.printf("[VBAT] %.3f V\n\n", d.sys.battery_voltage);
 }
 }
 
 void setup() {
     Serial.begin(115200); delay(1000);
     init_cansat_data();
+#ifndef USE_MOCK_SENSORS
+    BatteryMonitor::begin();
+#endif
+    mission.begin();
 #ifndef USE_MOCK_SENSORS
     Wire.begin(BoardConfig::I2C_SDA, BoardConfig::I2C_SCL, BoardConfig::I2C_FREQ);
     imuState.initialized = imu.begin();
@@ -231,6 +253,9 @@ void loop() {
     updateImu(now);
     updateMag(now);
     updateBaro(now);
+    updateBattery(now);
+    CanSatData_t missionData{};
+    if (get_cansat_data(&missionData)) mission.update(missionData, now);
 #ifdef ENABLE_ESPNOW
     updateRadio(now);
 #endif

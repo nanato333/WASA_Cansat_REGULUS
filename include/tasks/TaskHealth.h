@@ -8,6 +8,7 @@ enum class TaskId : uint8_t {
     MAG,
     BARO,
     GNSS,
+    BATTERY,
     MISSION,
     TELEMETRY,
     LOGGER,

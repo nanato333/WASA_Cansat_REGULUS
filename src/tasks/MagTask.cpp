@@ -4,6 +4,7 @@
 #include "tasks/SensorBus.h"
 #include "tasks/TaskHealth.h"
 #include "CanSatData.h"
+#include "MissionConfig.h"
 #ifndef USE_MOCK_SENSORS
 #include <Wire.h>
 #include "drivers/MMC5603.h"
@@ -11,7 +12,7 @@
 
 namespace {
 // MMC5603は20 ms周期（50 Hz）で磁気ベクトルと方位を更新する。
-constexpr TickType_t PERIOD = pdMS_TO_TICKS(20);
+
 constexpr TickType_t RETRY_PERIOD = pdMS_TO_TICKS(5000);
 #ifndef USE_MOCK_SENSORS
 MMC5603 magnetometer(Wire);
@@ -61,6 +62,8 @@ void MagTask(void *pvParameters) {
 #endif
         // タスク周期が止まっていないことをTaskHealthへ通知する。
         task_health_heartbeat(TaskId::MAG);
-        vTaskDelayUntil(&lastWake, PERIOD);
+        const MissionState state = static_cast<MissionState>(([](){ CanSatData_t d{}; get_cansat_data(&d); return d.sys.phase; })());
+        const TickType_t period = pdMS_TO_TICKS(state == MissionState::LAUNCH ? MissionConfig::FAST_MAG_PERIOD_MS : MissionConfig::NORMAL_MAG_PERIOD_MS);
+        vTaskDelayUntil(&lastWake, period);
     }
 }

@@ -40,8 +40,12 @@ typedef struct
 typedef struct
 {
     uint8_t phase;         // ミッションフェーズ (0〜7)
+    uint8_t subphase;       // 走行サブ状態 (5a～5c)
+    uint8_t operation_mode; // 開発／ミッションモード
+    uint8_t failsafe_reason; // FailsafeReason
     float battery_voltage; // バッテリー電圧 [V]
     int rssi;              // 電波強度 [dBm]
+    uint8_t reset_reason;  // ESP32リセット理由
     uint32_t timestamp;    // 経過時間 [ms]
 } SystemStatus_t;
 
@@ -64,6 +68,10 @@ bool update_gnss_data(double lat, double lon, float alt, uint8_t sats, bool fix,
 
 // MissionTaskだけがミッション状態を更新し、他タスクはスナップショットを参照する。
 bool update_mission_state(MissionState state);
+bool update_mission_status(MissionState state, MissionSubState substate, OperationMode mode);
+bool update_system_status(float battery_voltage, int rssi);
+bool update_battery_voltage(float battery_voltage);
+bool update_failsafe_reason(FailsafeReason reason);
 
 bool get_cansat_data(CanSatData_t *out_data);
 

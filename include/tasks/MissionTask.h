@@ -1,5 +1,3 @@
 #pragma once
-
-// センサー値からミッション状態を更新するFreeRTOSタスク。
-
 void MissionTask(void *pvParameters);
+bool submit_mission_command(uint8_t command);

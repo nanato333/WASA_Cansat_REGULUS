@@ -6,6 +6,7 @@
 #include "tasks/MagTask.h"
 #include "tasks/BaroTask.h"
 #include "tasks/GnssTask.h"
+#include "tasks/BatteryTask.h"
 #include "tasks/LoggerTask.h"
 #include "tasks/MissionTask.h"
 #include "tasks/TaskHealth.h"
@@ -40,8 +41,13 @@ void setup() {
 
     // タスクを起動する前に、共有データ・監視情報・I2C排他制御を準備する。
     init_cansat_data();
+    CanSatData_t bootData{};
+    if (get_cansat_data(&bootData)) {
+        Serial.printf("[BOOT] reset_reason=%u\n",
+                      static_cast<unsigned int>(bootData.sys.reset_reason));
+    }
     init_task_health();
-    update_mission_state(MissionState::ROCKET_LOADED);
+    update_mission_state(MissionState::BOOT);
 
     if (!init_sensor_bus()) {
         Serial.println("[BOOT] I2C bus initialization FAILED");
@@ -54,6 +60,7 @@ void setup() {
     allStarted &= startTask(GnssTask, "GnssTask", 4096, 3, 1);
     allStarted &= startTask(MagTask, "MagTask", 3072, 2, 1);
     allStarted &= startTask(BaroTask, "BaroTask", 3072, 2, 1);
+    allStarted &= startTask(BatteryTask, "BatteryTask", 2048, 2, 0);
     allStarted &= startTask(MissionTask, "MissionTask", 3072, 2, 0);
 #ifdef ENABLE_ESPNOW
     allStarted &= startTask(TelemetryTask, "TelemetryTask", 6144, 2, 0);
@@ -62,7 +69,7 @@ void setup() {
 
     Serial.printf("[BOOT] task startup %s; mission state=%s\n\n",
                   allStarted ? "complete" : "INCOMPLETE",
-                  mission_state_name(MissionState::ROCKET_LOADED));
+                  mission_state_name(MissionState::BOOT));
 }
 
 // ArduinoのloopTaskは処理を持たず、実処理は上で生成した各タスクが担当する。

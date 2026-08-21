@@ -71,6 +71,7 @@ const char *task_health_name(TaskId id) {
         case TaskId::MAG: return "MAG";
         case TaskId::BARO: return "BARO";
         case TaskId::GNSS: return "GNSS";
+        case TaskId::BATTERY: return "BATTERY";
         case TaskId::MISSION: return "MISSION";
         case TaskId::TELEMETRY: return "TELEMETRY";
         case TaskId::LOGGER: return "LOGGER";
@@ -85,6 +86,7 @@ uint32_t task_health_stale_limit_ms(TaskId id) {
         case TaskId::MAG: return 200;
         case TaskId::BARO: return 500;
         case TaskId::GNSS: return 500;
+        case TaskId::BATTERY: return 2500;
         case TaskId::MISSION: return 500;
         case TaskId::TELEMETRY: return 500;
         case TaskId::LOGGER: return 1500;

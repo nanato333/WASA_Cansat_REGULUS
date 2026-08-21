@@ -1,4 +1,5 @@
 #include "CanSatData.h"
+#include <esp_system.h>
 
 // 全タスクが参照する最新値。直接触らず、以下の更新・取得関数を経由する。
 static CanSatData_t g_cansat_data;
@@ -9,7 +10,8 @@ void init_cansat_data()
     if (g_data_mutex == NULL)
         g_data_mutex = xSemaphoreCreateMutex();
     memset(&g_cansat_data, 0, sizeof(CanSatData_t));
-    g_cansat_data.sys.phase = static_cast<uint8_t>(MissionState::ROCKET_LOADED);
+    g_cansat_data.sys.phase = static_cast<uint8_t>(MissionState::BOOT);
+    g_cansat_data.sys.reset_reason = static_cast<uint8_t>(esp_reset_reason());
 }
 
 bool update_imu_data(float ax, float ay, float az, float gx, float gy, float gz, bool valid)
@@ -105,6 +107,49 @@ bool get_cansat_data(CanSatData_t *out_data)
     {
         g_cansat_data.sys.timestamp = millis();
         *out_data = g_cansat_data;
+        xSemaphoreGive(g_data_mutex);
+        return true;
+    }
+    return false;
+}
+bool update_mission_status(MissionState state, MissionSubState substate, OperationMode mode)
+{
+    if (g_data_mutex == NULL) return false;
+    if (xSemaphoreTake(g_data_mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+        g_cansat_data.sys.phase = static_cast<uint8_t>(state);
+        g_cansat_data.sys.subphase = static_cast<uint8_t>(substate);
+        g_cansat_data.sys.operation_mode = static_cast<uint8_t>(mode);
+        xSemaphoreGive(g_data_mutex);
+        return true;
+    }
+    return false;
+}
+bool update_system_status(float battery_voltage, int rssi)
+{
+    if (g_data_mutex == NULL) return false;
+    if (xSemaphoreTake(g_data_mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+        g_cansat_data.sys.battery_voltage = battery_voltage;
+        g_cansat_data.sys.rssi = rssi;
+        xSemaphoreGive(g_data_mutex);
+        return true;
+    }
+    return false;
+}
+bool update_battery_voltage(float battery_voltage)
+{
+    if (g_data_mutex == NULL) return false;
+    if (xSemaphoreTake(g_data_mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+        g_cansat_data.sys.battery_voltage = battery_voltage;
+        xSemaphoreGive(g_data_mutex);
+        return true;
+    }
+    return false;
+}
+bool update_failsafe_reason(FailsafeReason reason)
+{
+    if (g_data_mutex == NULL) return false;
+    if (xSemaphoreTake(g_data_mutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+        g_cansat_data.sys.failsafe_reason = static_cast<uint8_t>(reason);
         xSemaphoreGive(g_data_mutex);
         return true;
     }

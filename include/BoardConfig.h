@@ -30,4 +30,11 @@ namespace BoardConfig
 
     constexpr int MOTOR_BIN1 = 7;
     constexpr int MOTOR_BIN2 = 15;
+
+    // バッテリー監視用ADC。100 kΩ + 100 kΩ分圧の中点を接続する。
+    constexpr int VBAT_PIN = 8;
+
+    // 状態表示用LED
+    constexpr int LED_PIN = 21;
+
 }
