@@ -177,9 +177,9 @@ NVSを消去して freertos_flight_mock を書き込み、地上局から AC=2 �
 - 基板上でのESP-NOW送受信確認
 - 実飛行ログに基づく打ち上げ・放出・着陸閾値の再調整
 
-## ESP-NOW受信機を試験基板へ書き込む
+## ESP-NOW受信機を基板へ書き込む
 
-OneDriveのArduino ReceiverをESP32-S3試験基板向けの espnow_receiver 環境として移植しています。ESP-NOWチャンネルは1、USBシリアルは115200 baud、受信表示LEDはGPIO21です。
+ESP-NOWチャンネルは1、USBシリアルは115200 baud、受信表示LEDはGPIO21です。
 
 ビルド：
 
