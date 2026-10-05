@@ -56,9 +56,14 @@ bool update_baro_data(float press, float temp, float alt, bool valid)
         return false;
     if (xSemaphoreTake(g_data_mutex, pdMS_TO_TICKS(10)) == pdTRUE)
     {
-        g_cansat_data.baro.pressure = press;
-        g_cansat_data.baro.temperature = temp;
-        g_cansat_data.baro.altitude = alt;
+        // Keep the last valid measurements when an I2C read fails instead of
+        // publishing the zero-initialized failed sample as a 0 m altitude.
+        if (valid)
+        {
+            g_cansat_data.baro.pressure = press;
+            g_cansat_data.baro.temperature = temp;
+            g_cansat_data.baro.altitude = alt;
+        }
         g_cansat_data.baro.is_valid = valid;
         xSemaphoreGive(g_data_mutex);
         return true;

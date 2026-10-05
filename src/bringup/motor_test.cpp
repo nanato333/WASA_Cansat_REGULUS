@@ -35,20 +35,6 @@ void loop()
 
     delay(2000);
 
-    stopMotors();
-    delay(1000);
-
-    // Motor A 逆転
-    Serial.println("Motor A: Reverse");
-
-    digitalWrite(BoardConfig::MOTOR_AIN1, LOW);
-    digitalWrite(BoardConfig::MOTOR_AIN2, HIGH);
-
-    delay(2000);
-
-    stopMotors();
-    delay(1000);
-
     // Motor B 正転
     Serial.println("Motor B: Forward");
 
@@ -56,20 +42,6 @@ void loop()
     digitalWrite(BoardConfig::MOTOR_BIN2, LOW);
 
     delay(2000);
-
-    stopMotors();
-    delay(1000);
-
-    // Motor B 逆転
-    Serial.println("Motor B: Reverse");
-
-    digitalWrite(BoardConfig::MOTOR_BIN1, LOW);
-    digitalWrite(BoardConfig::MOTOR_BIN2, HIGH);
-
-    delay(2000);
-
-    stopMotors();
-    delay(3000);
 }
 
 void stopMotors()
