@@ -3,6 +3,9 @@
 #include <esp_now.h>
 #include <esp_wifi.h>
 #include <esp_arduino_version.h>
+#ifdef ENABLE_RC
+#include "tasks/MissionTask.h"
+#endif
 namespace{uint8_t broadcastAddress[6]={255,255,255,255,255,255};}
 volatile bool EspNowRadio::actionPending_=false;volatile uint8_t EspNowRadio::pendingAction_=0;WcppTelemetry::Command EspNowRadio::pendingCommand_;
 #if defined(ESP_ARDUINO_VERSION) && ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3,0,0)
@@ -14,4 +17,12 @@ bool EspNowRadio::begin(uint8_t ch){if(initialized_)return true;WiFi.mode(WIFI_S
 bool EspNowRadio::send(const uint8_t*d,size_t n){if(!d||!n||n>250){++sendFailCount_;return false;}bool ok=esp_now_send(broadcastAddress,d,n)==ESP_OK;if(ok)++sentCount_;else++sendFailCount_;return ok;}
 bool EspNowRadio::takeCommand(WcppTelemetry::Command&c){if(!actionPending_)return false;noInterrupts();c=pendingCommand_;actionPending_=false;interrupts();return true;}
 bool EspNowRadio::takeAction(uint8_t&a){WcppTelemetry::Command c;if(!takeCommand(c))return false;a=c.action;return true;}
-void EspNowRadio::receivePacket(const uint8_t*d,int n){WcppTelemetry::Command c;if(WcppTelemetry::decodeCommand(d,(size_t)n,c)){pendingCommand_=c;pendingAction_=c.action;actionPending_=true;}}
+void EspNowRadio::receivePacket(const uint8_t*d,int n){
+    WcppTelemetry::Command c;
+    if (!WcppTelemetry::decodeCommand(d,(size_t)n,c)) return;
+#ifdef ENABLE_RC
+    submit_mission_command(c);
+#else
+    pendingCommand_=c;pendingAction_=c.action;actionPending_=true;
+#endif
+}

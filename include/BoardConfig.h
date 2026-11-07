@@ -38,6 +38,10 @@ namespace BoardConfig
     // M1/M2をはんだ付け後、Motor Aが右輪でなければfalseへ変更する。
     constexpr bool MOTOR_A_IS_RIGHT = true;
 
+    // RC専用。前進入力で逆に回る車輪だけ true / false を切り替える。
+    constexpr bool RC_RIGHT_MOTOR_INVERT = false;
+    constexpr bool RC_LEFT_MOTOR_INVERT = true;
+
     // バッテリー監視用ADC。100 kΩ + 100 kΩ分圧の中点を接続する。
     constexpr int VBAT_PIN = 8;
 

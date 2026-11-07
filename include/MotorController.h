@@ -17,6 +17,9 @@ public:
     void forward();
     void turnLeft();
     void turnRight();
+#ifdef ENABLE_RC
+    void driveRc(int8_t left, int8_t right);
+#endif
     MotorDriveState state() const { return state_; }
 
 private:
@@ -25,4 +28,7 @@ private:
     void stopMotorA();
     void stopMotorB();
     MotorDriveState state_ = MotorDriveState::STOPPED;
+#ifdef ENABLE_RC
+    int8_t rcA_=0, rcB_=0;
+#endif
 };

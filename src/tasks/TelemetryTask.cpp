@@ -44,21 +44,27 @@ void TelemetryTask(void *) {
 
             CanSatData_t data{};
             if (get_cansat_data(&data)) {
+#ifdef ENABLE_RC
+                const uint32_t period = 200;
+                const bool minimal = false;
+#else
                 const MissionState state =
                     static_cast<MissionState>(data.sys.phase);
+                const bool minimal = state == MissionState::LOW_BATTERY;
                 const uint32_t period =
                     state == MissionState::LOW_BATTERY
                         ? MissionConfig::LOW_BATTERY_TELEMETRY_PERIOD_MS
                         : (state == MissionState::LAUNCH
                             ? MissionConfig::FAST_TELEMETRY_PERIOD_MS
                             : MissionConfig::NORMAL_TELEMETRY_PERIOD_MS);
+#endif
 
                 if (now - lastSendMs >= period) {
                     lastSendMs = now;
                     uint8_t packet[250]{};
                     const size_t length = WcppTelemetry::encode(
                         data, packet, sizeof(packet),
-                        state == MissionState::LOW_BATTERY);
+                        minimal);
                     if (length > 0 && radio.send(packet, length)) {
                         task_health_sensor_success(TaskId::TELEMETRY);
                     } else {

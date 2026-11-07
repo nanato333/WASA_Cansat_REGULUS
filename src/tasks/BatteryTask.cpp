@@ -5,7 +5,11 @@
 #include "CanSatData.h"
 
 namespace {
+#ifdef ENABLE_RC
+constexpr TickType_t BATTERY_PERIOD = pdMS_TO_TICKS(50);
+#else
 constexpr TickType_t BATTERY_PERIOD = pdMS_TO_TICKS(1000);
+#endif
 }
 
 void BatteryTask(void *pvParameters) {
